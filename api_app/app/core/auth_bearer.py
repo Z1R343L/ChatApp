@@ -12,17 +12,15 @@ class JwtBearer(HTTPBearer):
     async def __call__(self, request: Request):
         credentials: HTTPAuthorizationCredentials = await super(JwtBearer,self).__call__(request)
 
-        if credentials:
-            if not credentials.scheme == f"{JWT_TOKEN_PREFIX}":
-                raise HTTPException(status_code=403, detail="Invalid authentication scheme.")
-
-            if not self.verify_jwt(credentials.credentials):
-                raise HTTPException(status_code=403, detail="Invalid token or expired token.")
-
-            return self.verify_jwt(credentials.credentials)
-        
-        else:
+        if not credentials:
             raise HTTPException(status_code=403, detail="Invalid authorization code.")
+        if credentials.scheme != f"{JWT_TOKEN_PREFIX}":
+            raise HTTPException(status_code=403, detail="Invalid authentication scheme.")
+
+        if not self.verify_jwt(credentials.credentials):
+            raise HTTPException(status_code=403, detail="Invalid token or expired token.")
+
+        return self.verify_jwt(credentials.credentials)
     
     def verify_jwt(self, jwtoken: str):
         isTokenValid: bool = False

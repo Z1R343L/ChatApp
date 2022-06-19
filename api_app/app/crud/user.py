@@ -19,10 +19,7 @@ async def get_user( conn: AsyncIOMotorClient, field: str, value: str) -> Union[U
 
 async def get_filtered_users(conn: AsyncIOMotorClient, query: str):
     users =  await conn[database_name][user_collection_name].aggregate( [{'$match':{'username':{ "$regex":f'{query}'}}}] ).to_list(length=50)
-    if users:
-        return { "result": users }
-    else:
-        return False
+    return { "result": users } if users else False
 
 async def check_free_email(conn:AsyncIOMotorClient, email: str = None):
 
@@ -47,7 +44,4 @@ async def create_user(conn: AsyncIOMotorClient, user: UserInCreate) -> UserInDB:
 
 async def get_messages(conn: AsyncIOMotorClient, room_name:str):
     row = await conn[database_name]["rooms"].find_one({"room_name":room_name})
-    if row:
-        return jsonable_encoder(row["messages"])
-    else:
-        return None
+    return jsonable_encoder(row["messages"]) if row else None

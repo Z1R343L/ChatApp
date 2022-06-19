@@ -39,16 +39,11 @@ async def register(db:AsyncIOMotorClient = Depends(get_database), email: EmailSt
 @router.post("/user/login", response_model=TokenResponse, tags=["Authentication"], name="Email / username login")
 async def login(data: UserInRequest = Body(...), db: AsyncIOMotorClient = Depends(get_database) ):
     print(data)
-    if '@' in data.username:
-        field = "email"
-    
-    else: 
-        field = "username"
-    
+    field = "email" if '@' in data.username else "username"
     dbuser = await get_user(db, field = field, value = data.username )
     if not dbuser or not dbuser.check_password(data.password):
         raise HTTPException(status_code=HTTP_400_BAD_REQUEST, detail="Wrong username / password!")
-    
+
     token = create_access_token(data = {"username" : dbuser.username})
     return JSONResponse(status_code=HTTP_200_OK, content= jsonable_encoder( { "token":token} ))
 
@@ -64,11 +59,7 @@ async def save_device_token(db: AsyncIOMotorClient = Depends(get_database), data
 
 @router.post("/user/filter/{query}", name="Get all users")
 async def filter_users(query: str, db:AsyncIOMotorClient=Depends(get_database), current_user: str = Header(None) ):
-    finded_users = None
-
-    if current_user:
-        finded_users = await get_filtered_users(db, query )
-
+    finded_users = await get_filtered_users(db, query ) if current_user else None
     if finded_users:
         res = ListUser(**finded_users)
         return JSONResponse(status_code = HTTP_200_OK, content = res.dict()["result"] )
