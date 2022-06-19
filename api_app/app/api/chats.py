@@ -86,7 +86,7 @@ async def listen_messages(db: AsyncIOMotorClient = Depends(get_database), websoc
 @router.get("/user/chats/")
 async def get_messages_user(db: AsyncIOMotorClient =  Depends(get_database), current_user: str = Header(None)):
     """This function will return current user chats with other ones."""
-    
+
     chat_response = await get_messages_of_user(db, current_user)
     if len(chat_response["chats"]) >= 1:
         return JSONResponse(status_code=HTTP_200_OK, content = chat_response)
@@ -101,38 +101,38 @@ async def get_messages_of_user(db: AsyncIOMotorClient, current_user: str =None):
         get_username =  await db["chat-app"]["rooms"].aggregate( [{'$match':{'created_by':{ "$regex":f'{current_user}'}}}] ).to_list(length=None)
         if get_username:
             for i in get_username:
-                to_response = {}
                 target_user = await db["chat-app"]['users'].find_one( { 'username' :  i['target_user'] } )
-        
-                to_response["recvUsername"] = i["target_user"]
-                to_response['recvUsername1'] = i['messages'][-1]['target_user']
-                to_response["lastMessage"] = i["messages"][-1]["data"]
-                to_response["lastMessageDate"] = i["messages"][-1]["date_sended"]
-                to_response["msg_saw_by_tusr"] = i["messages"][-1]["msg_saw_by_tusr"]
-                to_response["currentUser"] = current_user
-                to_response["profilePic"] = target_user["image"]
+
+                to_response = {
+                    "recvUsername": i["target_user"],
+                    'recvUsername1': i['messages'][-1]['target_user'],
+                    "lastMessage": i["messages"][-1]["data"],
+                    "lastMessageDate": i["messages"][-1]["date_sended"],
+                    "msg_saw_by_tusr": i["messages"][-1]["msg_saw_by_tusr"],
+                    "currentUser": current_user,
+                    "profilePic": target_user["image"],
+                }
 
                 chat_response["chats"].append(to_response)
-
-            return  jsonable_encoder(chat_response)
 
         else:
             get_username = await db["chat-app"]["rooms"].aggregate( [{'$match':{'target_user':{ "$regex":f'{current_user}'}}}] ).to_list(length=None)
             for i in get_username:
-                to_response = {}
                 target_user = await db["chat-app"]["users"].find_one( { 'username' :  i['created_by'] } )
 
-                to_response["recvUsername"] = i["created_by"] # target_user 
-                to_response['recvUsername1'] = i['messages'][-1]['target_user'] # last message target user
-                to_response["lastMessage"] = i["messages"][-1]["data"] # last message
-                to_response["lastMessageDate"] = i["messages"][-1]["date_sended"]
-                to_response["msg_saw_by_tusr"] = i["messages"][-1]["msg_saw_by_tusr"]
-                to_response["currentUser"] = current_user
-                to_response["profilePic"] = target_user["image"]
+                to_response = {
+                    "recvUsername": i["created_by"],
+                    'recvUsername1': i['messages'][-1]['target_user'],
+                    "lastMessage": i["messages"][-1]["data"],
+                    "lastMessageDate": i["messages"][-1]["date_sended"],
+                    "msg_saw_by_tusr": i["messages"][-1]["msg_saw_by_tusr"],
+                    "currentUser": current_user,
+                    "profilePic": target_user["image"],
+                }
 
                 chat_response["chats"].append(to_response)
 
-            return jsonable_encoder(chat_response)
+        return  jsonable_encoder(chat_response)
 
     except Exception as e:
         print(e)
@@ -146,40 +146,27 @@ async def get_messages_for_notif(db: AsyncIOMotorClient, current_user: str =None
         get_username =  await db["chat-app"]["rooms"].find_one( {'created_by':f'{current_user}'} )
         if get_username:
             
-            to_response = {}
             target_user = await db["chat-app"]['users'].find_one( { 'username' :  get_username['target_user'] } )
             deviceToken = target_user['deviceToken']
-            to_response["recvUsername"] = get_username["target_user"]
-            to_response['recvUsername1'] = get_username['messages'][-1]['target_user']
-            to_response["lastMessage"] = get_username["messages"][-1]["data"]
-            to_response["lastMessageDate"] = get_username["messages"][-1]["date_sended"]
-            to_response["msg_saw_by_tusr"] = get_username["messages"][-1]["msg_saw_by_tusr"]
-            to_response["currentUser"] = current_user
-            to_response["profilePic"] = target_user["image"]
-
-            chat_response["chats"].append(to_response)
-
-            return ( jsonable_encoder(chat_response) , deviceToken )
-            #return  jsonable_encoder(chat_response)
+            to_response = {"recvUsername": get_username["target_user"]}
+                    #return  jsonable_encoder(chat_response)
 
         else:
             get_username = await db["chat-app"]["rooms"].find_one( {'target_user': f'{current_user}'} )
-            
-            to_response = {}
+
             target_user = await db["chat-app"]["users"].find_one( { 'username' :  get_username['created_by'] } )
             deviceToken = target_user['deviceToken']
-            to_response["recvUsername"] = get_username["created_by"] # target_user 
-            to_response['recvUsername1'] = get_username['messages'][-1]['target_user'] # last message target user
-            to_response["lastMessage"] = get_username["messages"][-1]["data"] # last message
-            to_response["lastMessageDate"] = get_username["messages"][-1]["date_sended"]
-            to_response["msg_saw_by_tusr"] = get_username["messages"][-1]["msg_saw_by_tusr"]
-            to_response["currentUser"] = current_user
-            to_response["profilePic"] = target_user["image"]
+            to_response = {"recvUsername": get_username["created_by"]}
+        to_response['recvUsername1'] = get_username['messages'][-1]['target_user']
+        to_response["lastMessage"] = get_username["messages"][-1]["data"]
+        to_response["lastMessageDate"] = get_username["messages"][-1]["date_sended"]
+        to_response["msg_saw_by_tusr"] = get_username["messages"][-1]["msg_saw_by_tusr"]
+        to_response["currentUser"] = current_user
+        to_response["profilePic"] = target_user["image"]
 
-            chat_response["chats"].append(to_response)
+        chat_response["chats"].append(to_response)
 
-            return ( jsonable_encoder(chat_response) , deviceToken )
-
+        return ( jsonable_encoder(chat_response) , deviceToken )
     except Exception as e:
         print(e)
         return chat_response
